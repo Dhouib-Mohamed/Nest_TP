@@ -1,22 +1,20 @@
 import { Inject, Injectable, NotFoundException } from "@nestjs/common";
-import { Todo } from "./models/todo.model";
-import { CreateTodoDto } from "./dto/createTodoDto";
-import { UpdateTodoDto } from "./dto/modifyTodoDto";
-import { PROVIDER_TOKENS } from "../common/common.module";
+import { Todo } from "../models/todo.model";
+import { UpdateTodoDto } from "../dto/modifyTodoDto";
+import { PROVIDER_TOKENS } from "../../common/common.module";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Like, Repository } from "typeorm";
-import { TodoEntity } from "./entities/todo.entity";
-import { TodoStatusEnum } from "./todoStatusEnum";
+import { TodoEntity } from "../entities/todo.entity";
+import { TodoStatusEnum } from "../todoStatusEnum";
 
 @Injectable()
-export class TodoService {
+export class TodoDBService {
   private readonly todos: Todo[];
 
   constructor(
     @Inject(PROVIDER_TOKENS.uuid) private uuid,
     @InjectRepository(TodoEntity) private readonly TodoRepository: Repository<TodoEntity>
   ) {
-    this.todos = [];
   }
 
   newTodo(name: string, description: string, id = "") {
@@ -29,42 +27,7 @@ export class TodoService {
     return todo;
   }
 
-  getTodos() {
-    return this.todos;
-  }
-
-  getTodoById(id: string) {
-    const todo = this.todos.find((e) => e.id === id);
-    if (!todo) {
-      throw new NotFoundException();
-    }
-    return todo;
-  }
-
-  deleteTodo(id: string) {
-    const index = this.todos.findIndex((e) => e.id === id);
-    if (index === -1) {
-      throw new NotFoundException();
-    }
-    this.todos.splice(index, 1);
-    return { "number of deleted elements": 1 };
-  }
-
-  addTodo(data: CreateTodoDto) {
-    const todo = this.newTodo(data.name, data.description);
-    this.todos.push(todo);
-    return todo;
-  }
-
-  updateTodo(id: string, data: UpdateTodoDto) {
-    let todo = this.getTodoById(id);
-    this.deleteTodo(id);
-    todo = { ...todo, ...data };
-    this.todos.push(todo);
-    return todo;
-  }
-
-  async getTodosDB(chaine = "", statut = null) {
+  async getTodos(chaine = "", statut = null) {
     // let result = []
     // if (statut)
     // {
@@ -87,7 +50,7 @@ export class TodoService {
     }
   }
 
-  async getTodosDBQuery(chaine = "", statut = null) {
+  async getTodosQuery(chaine = "", statut = null) {
     const queryBuilder = this.TodoRepository.createQueryBuilder("todo");
 
     if (statut) {
@@ -117,7 +80,7 @@ export class TodoService {
     });
   }
 
-  async getStatusDB() {
+  async getStatus() {
     return {
       actif: await this.TodoRepository.count({ where: { statut: TodoStatusEnum.actif } }),
       waiting: await this.TodoRepository.count({ where: { statut: TodoStatusEnum.waiting } }),
@@ -125,7 +88,7 @@ export class TodoService {
     };
   }
 
-  async getTodoByIdDB(id: string) {
+  async getTodoById(id: string) {
     const todo = await this.TodoRepository.find({ where: { id: id } });
     if (todo.length === 0) {
       throw new NotFoundException();
@@ -133,24 +96,24 @@ export class TodoService {
     return todo;
   }
 
-  async deleteTodoDB(id: string) {
+  async deleteTodo(id: string) {
     return await this.TodoRepository.delete(id);
   }
 
-  async softDeleteTodoDB(id: string) {
+  async softDeleteTodo(id: string) {
     return await this.TodoRepository.softDelete(id);
   }
 
-  async restoreTodoDB(id: string) {
+  async restoreTodo(id: string) {
     return await this.TodoRepository.restore(id);
   }
 
-  async addTodoDB(data) {
+  async addTodo(data) {
     const todo = this.newTodo(data.name, data.description, data.userId);
-    return await this.TodoRepository.insert(todo);
+    return await this.TodoRepository.save(todo);
   }
 
-  async updateTodoDB(id: string, data: UpdateTodoDto) {
+  async updateTodo(id: string, data: UpdateTodoDto) {
     return await this.TodoRepository.update(id, data);
   }
 }

@@ -9,26 +9,23 @@ import {
   Query,
   Req,
   UnauthorizedException,
-  UseGuards,
   UsePipes,
   ValidationPipe
 } from "@nestjs/common";
-import { CreateTodoDto } from "./dto/createTodoDto";
-import { UpdateTodoDto } from "./dto/modifyTodoDto";
-import { TodoService } from "./todo.service";
-import { QueryDto } from "./dto/queryDto";
-import { AuthenticationMiddleware } from "./middleware/authentication/authentication.middleware";
+import { CreateTodoDto } from "../dto/createTodoDto";
+import { UpdateTodoDto } from "../dto/modifyTodoDto";
+import { QueryDto } from "../dto/queryDto";
+import { TodoDBService } from "./todoDB.service";
 
 @UsePipes(new ValidationPipe({ transform: true }))
-@UseGuards(AuthenticationMiddleware)
-@Controller("todo")
-export class TodoController {
-  constructor(private TodoService: TodoService) {
+@Controller({ path: "todo" })
+export class TodoDBController {
+  constructor(private TodoService: TodoDBService) {
   }
 
   @Get()
   getTodos(@Query() query: QueryDto) {
-    return this.TodoService.getTodosDBQuery(query.critere, query.status);
+    return this.TodoService.getTodosQuery(query.critere, query.status);
   }
 
   @Get("/pagination")
@@ -43,12 +40,12 @@ export class TodoController {
 
   @Get("/status")
   getTodosByStatus() {
-    return this.TodoService.getStatusDB();
+    return this.TodoService.getStatus();
   }
 
   @Get("/:id")
   getTodoById(@Param("id") id: string) {
-    return this.TodoService.getTodoByIdDB(id);
+    return this.TodoService.getTodoById(id);
   }
 
   @Delete("/soft/:id")
@@ -57,7 +54,7 @@ export class TodoController {
     if (request.userId !== todo[0].userId) {
       throw new UnauthorizedException("Vous n'êtes pas autorisé à effectuer cette action.");
     }
-    return this.TodoService.softDeleteTodoDB(id);
+    return this.TodoService.softDeleteTodo(id);
   }
 
   @Delete("/:id")
@@ -66,7 +63,7 @@ export class TodoController {
     if (request.userId !== todo[0].userId) {
       throw new UnauthorizedException("Vous n'êtes pas autorisé à effectuer cette action.");
     }
-    return this.TodoService.deleteTodoDB(id);
+    return this.TodoService.deleteTodo(id);
   }
 
   @Patch("/:id")
@@ -75,12 +72,12 @@ export class TodoController {
     if (request.userId !== todo[0].userId) {
       throw new UnauthorizedException("Vous n'êtes pas autorisé à effectuer cette action.");
     }
-    return this.TodoService.updateTodoDB(id, updateTodoDto);
+    return this.TodoService.updateTodo(id, updateTodoDto);
   }
 
   @Post()
   addTodo(@Body() createTodoDto: CreateTodoDto, @Req() request) {
-    return this.TodoService.addTodoDB({ ...createTodoDto, userId: request.userId });
+    return this.TodoService.addTodo({ ...createTodoDto, userId: request.userId });
   }
 
   @Patch("/restore/:id")
@@ -89,6 +86,6 @@ export class TodoController {
     if (request.userId !== todo[0].userId) {
       throw new UnauthorizedException("Vous n'êtes pas autorisé à effectuer cette action.");
     }
-    return this.TodoService.restoreTodoDB(id);
+    return this.TodoService.restoreTodo(id);
   }
 }
